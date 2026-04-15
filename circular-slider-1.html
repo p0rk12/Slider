@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular jQuery Slider</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        
+        .slider-container {
+            max-width: 1200px;
+            width: 90%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            min-height: 500px;
+        }
+
+        /* Left Column - Slide Information */
+        .left-column {
+            flex: 1;
+            padding: 60px 40px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .slide-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .slide-review {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .navigation-arrows {
+            display: flex;
+            gap: 15px;
+        }
+
+        .arrow {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .arrow:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .arrow::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-top: 2px solid white;
+            border-right: 2px solid white;
+        }
+
+        .arrow.prev::before {
+            transform: rotate(-135deg);
+        }
+
+        .arrow.next::before {
+            transform: rotate(45deg);
+        }
+
+        /* Right Column - Circular Image Display */
+        .right-column {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+
+        .circular-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+        }
+
+        .circle-background {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            position: relative;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .center-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s ease;
+        }
+
+        .center-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .border-images {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Position border images around the circle - will be calculated dynamically by JS */
+        .border-image {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s ease;
+            cursor: pointer;
+            border: 3px solid transparent; /* No visible border by default */
+            top: 50%;
+            left: 50%;
+        }
+
+        .border-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .border-image:hover {
+            border-color: #FFF18E !important; /* Yellow border on hover */
+        }
+
+        .border-image.active {
+            border-color: #FFF18E !important; /* Yellow border when active */
+            /* Transform handled by JavaScript */
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .slider-container {
+                flex-direction: column;
+                margin: 20px;
+            }
+
+            .left-column {
+                padding: 40px 30px;
+            }
+
+            .slide-name {
+                font-size: 2rem;
+            }
+
+            .circular-container {
+                width: 280px;
+                height: 280px;
+            }
+
+            .center-image {
+                width: 100px;
+                height: 100px;
+            }
+
+            .border-image {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slider-container">
+        <!-- Left Column - Slide Information -->
+        <div class="left-column">
+            <div class="slide-content active" data-slide="0">
+                <h2 class="slide-name">Sarah Johnson</h2>
+                <p class="slide-review">"Working with this team has been an absolute game-changer for our business. Their attention to detail and innovative approach exceeded all our expectations. The results speak for themselves!"</p>
+            </div>
+            
+            <div class="slide-content" data-slide="1">
+                <h2 class="slide-name">Michael Chen</h2>
+                <p class="slide-review">"The professionalism and expertise demonstrated throughout our project was outstanding. They delivered on time, within budget, and the quality was exceptional. Highly recommended!"</p>
+            </div>
+            
+            <div class="slide-content" data-slide="2">
+                <h2 class="slide-name">Emma Williams</h2>
+                <p class="slide-review">"From concept to completion, the entire process was seamless. The creative solutions provided helped us achieve our goals faster than we ever imagined possible."</p>
+            </div>
+            
+            <div class="slide-content" data-slide="3">
+                <h2 class="slide-name">David Rodriguez</h2>
+                <p class="slide-review">"The level of customer service and technical expertise is unmatched. They truly understand business needs and deliver solutions that make a real difference."</p>
+            </div>
+            
+            <div class="slide-content" data-slide="4">
+                <h2 class="slide-name">Lisa Thompson</h2>
+                <p class="slide-review">"Incredible attention to detail and fantastic communication throughout the project. The end result exceeded our expectations and has significantly improved our operations."</p>
+            </div>
+
+            <div class="navigation-arrows">
+                <div class="arrow prev" id="prevBtn"></div>
+                <div class="arrow next" id="nextBtn"></div>
+            </div>
+        </div>
+
+        <!-- Right Column - Circular Image Display -->
+        <div class="right-column">
+            <div class="circular-container">
+                <div class="circle-background">
+                    <div class="center-image">
+                        <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face" alt="Active slide" id="centerImg">
+                    </div>
+                    
+                    <div class="border-images">
+                        <div class="border-image active" data-slide="0">
+                            <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face" alt="Sarah Johnson">
+                        </div>
+                        <div class="border-image" data-slide="1">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Michael Chen">
+                        </div>
+                        <div class="border-image" data-slide="2">
+                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" alt="Emma Williams">
+                        </div>
+                        <div class="border-image" data-slide="3">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="David Rodriguez">
+                        </div>
+                        <div class="border-image" data-slide="4">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face" alt="Lisa Thompson">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            let currentSlide = 0;
+            const totalSlides = $('.border-image').length; // Dynamic count
+            const radius = 175; // Distance from center
+            
+            // Image sources for center display
+            const centerImages = [
+                'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+                'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face'
+            ];
+
+            // Function to calculate and set positions dynamically
+            function positionBorderImages() {
+                $('.border-image').each(function(index) {
+                    const angle = (360 / totalSlides) * index; // Calculate angle for each image
+                    const angleRad = (angle - 90) * (Math.PI / 180); // Convert to radians and start from top
+                    
+                    // Calculate position using trigonometry
+                    const x = Math.cos(angleRad) * radius;
+                    const y = Math.sin(angleRad) * radius;
+                    
+                    // Apply transform with positioning
+                    const baseTransform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+                    
+                    // Apply scale based on current state
+                    if ($(this).hasClass('active')) {
+                        $(this).css('transform', baseTransform + ' scale(1.2)');
+                    } else {
+                        $(this).css('transform', baseTransform);
+                    }
+                    
+                    // Store the base transform for hover and active states
+                    $(this).data('base-transform', baseTransform);
+                });
+            }
+
+            function updateSlider(slideIndex) {
+                // Update slide content
+                $('.slide-content').removeClass('active');
+                $(`.slide-content[data-slide="${slideIndex}"]`).addClass('active');
+                
+                // Update border images - remove active from all first
+                $('.border-image').removeClass('active');
+                
+                // Apply positioning to all images first
+                $('.border-image').each(function() {
+                    const baseTransform = $(this).data('base-transform');
+                    $(this).css('transform', baseTransform);
+                });
+                
+                // Then add active class and scale to the selected image
+                const activeImage = $(`.border-image[data-slide="${slideIndex}"]`);
+                activeImage.addClass('active');
+                const activeBaseTransform = activeImage.data('base-transform');
+                activeImage.css('transform', activeBaseTransform + ' scale(1.2)');
+                
+                // Update center image with smooth transition
+                if (centerImages[slideIndex]) {
+                    $('#centerImg').fadeOut(200, function() {
+                        $(this).attr('src', centerImages[slideIndex]).fadeIn(200);
+                    });
+                }
+                
+                currentSlide = slideIndex;
+            }
+
+            function nextSlide() {
+                const nextIndex = (currentSlide + 1) % totalSlides;
+                updateSlider(nextIndex);
+            }
+
+            function prevSlide() {
+                const prevIndex = (currentSlide - 1 + totalSlides) % totalSlides;
+                updateSlider(prevIndex);
+            }
+
+            // Initialize positions
+            positionBorderImages();
+
+            // Update hover effects to work with dynamic positioning
+            $('.border-image').hover(
+                function() {
+                    if (!$(this).hasClass('active')) {
+                        const baseTransform = $(this).data('base-transform');
+                        $(this).css('transform', baseTransform + ' scale(1.1)');
+                    }
+                },
+                function() {
+                    if (!$(this).hasClass('active')) {
+                        const baseTransform = $(this).data('base-transform');
+                        $(this).css('transform', baseTransform);
+                    } else {
+                        const baseTransform = $(this).data('base-transform');
+                        $(this).css('transform', baseTransform + ' scale(1.2)');
+                    }
+                }
+            );
+
+            // Navigation arrows
+            $('#nextBtn').click(function() {
+                nextSlide();
+            });
+
+            $('#prevBtn').click(function() {
+                prevSlide();
+            });
+
+            // Border image clicks
+            $('.border-image').click(function() {
+                const slideIndex = parseInt($(this).data('slide'));
+                updateSlider(slideIndex);
+            });
+
+            // Auto-advance slider (optional)
+            let autoSlide = setInterval(nextSlide, 5000);
+
+            // Pause auto-advance on hover
+            $('.slider-container').hover(
+                function() {
+                    clearInterval(autoSlide);
+                },
+                function() {
+                    autoSlide = setInterval(nextSlide, 5000);
+                }
+            );
+
+            // Keyboard navigation
+            $(document).keydown(function(e) {
+                if (e.which == 37) { // Left arrow
+                    prevSlide();
+                } else if (e.which == 39) { // Right arrow
+                    nextSlide();
+                }
+            });
+
+            // Touch/swipe support for mobile
+            let startX = 0;
+            let endX = 0;
+
+            $('.left-column').on('touchstart', function(e) {
+                startX = e.originalEvent.touches[0].clientX;
+            });
+
+            $('.left-column').on('touchend', function(e) {
+                endX = e.originalEvent.changedTouches[0].clientX;
+                const difference = startX - endX;
+                
+                if (Math.abs(difference) > 50) {
+                    if (difference > 0) {
+                        nextSlide();
+                    } else {
+                        prevSlide();
+                    }
+                }
+            });
+
+            // Initialize with smooth animations
+            setTimeout(function() {
+                $('.slider-container').css('opacity', '1');
+            }, 100);
+
+            // Recalculate positions on window resize
+            $(window).resize(function() {
+                positionBorderImages();
+            });
+        });
+    </script>
+</body>
+</html>
